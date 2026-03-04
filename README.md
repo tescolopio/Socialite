@@ -1,2 +1,41 @@
-# Socialite
-A visual dashboard where a GM can upload an NPC portrait, set hidden biases, and click to fill "Progress Clocks" as players succeed at diplomatic roleplay, gamifying the conversation.
+# Socialite – Social Encounter Dashboard
+
+A visual GM dashboard for tracking complex social negotiations using narrative mechanics like **Progress Clocks** and **Influence Points**. Built with React + TypeScript + Vite.
+
+![Empty state](https://github.com/user-attachments/assets/b8e21c18-72a1-4327-969c-3b94543c4c72)
+![Dashboard with NPCs](https://github.com/user-attachments/assets/b40e8ea4-59ba-42cd-bd6c-2f0e0f2cc27b)
+
+## Features
+
+- **NPC Cards** – Upload a portrait, set a name, and write GM notes for each NPC
+- **Progress Clocks** – SVG pie-style clocks with 4, 6, or 8 segments; click to fill or unfill as players achieve diplomatic successes
+- **Influence Points** – Track per-NPC influence with a simple +/− counter
+- **Hidden Biases** – Set labeled biases on a −5 to +5 scale; shown as color-coded bar charts in GM mode, hidden from players otherwise
+- **GM Mode toggle** – Reveal or conceal biases at the top-level with one checkbox
+- **Persistence** – All data is saved to `localStorage` automatically
+
+## Getting Started
+
+```bash
+npm install
+npm run dev
+```
+
+Then open [http://localhost:5173](http://localhost:5173).
+
+## Build
+
+```bash
+npm run build
+```
+
+## Usage
+
+1. Click **+ Add NPC** to create a new NPC card
+2. Click the portrait area to upload an image
+3. Click the NPC name to rename it
+4. Click clock segments to fill them as players succeed at roleplay
+5. Use **+/−** to adjust Influence Points
+6. Click **Edit** on the biases section to add / adjust hidden biases
+7. Toggle **Show Biases (GM mode)** to reveal biases on screen
+8. Click **GM Notes** to add private notes
