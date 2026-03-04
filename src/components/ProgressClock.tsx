@@ -45,8 +45,9 @@ export default function ProgressClock({
       viewBox={`0 0 ${size} ${size}`}
       className="progress-clock"
       aria-label={`Progress clock: ${filled} of ${segments} segments filled`}
-      role="img"
+      role="group"
     >
+      <title>{`Progress clock: ${filled} of ${segments} segments filled`}</title>
       {/* Background circle */}
       <circle cx={cx} cy={cy} r={r + 4} fill="#1a1a2e" />
       {slices.map((slice, i) => (

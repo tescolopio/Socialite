@@ -19,28 +19,95 @@ function createNPC(): NPC {
   };
 }
 
+function normalizeNPC(raw: any): NPC {
+  const base = createNPC();
+
+  const npc: NPC = {
+    ...base,
+    // id is required; fall back to generated if missing/invalid
+    id: typeof raw?.id === 'string' && raw.id.length > 0 ? raw.id : base.id,
+  };
+
+  if (typeof raw?.name === 'string') {
+    npc.name = raw.name;
+  }
+
+  // portrait can be null or a string
+  if (raw && (raw.portrait === null || typeof raw.portrait === 'string')) {
+    npc.portrait = raw.portrait;
+  }
+
+  if (Array.isArray(raw?.biases)) {
+    npc.biases = raw.biases;
+  }
+
+  if (typeof raw?.clockSegments === 'number' && Number.isFinite(raw.clockSegments)) {
+    const segments = Math.max(1, Math.floor(raw.clockSegments));
+    npc.clockSegments = segments;
+  }
+
+  if (typeof raw?.clockFilled === 'number' && Number.isFinite(raw.clockFilled)) {
+    const filled = Math.max(0, Math.floor(raw.clockFilled));
+    npc.clockFilled = filled;
+  }
+
+  if (typeof raw?.influencePoints === 'number' && Number.isFinite(raw.influencePoints)) {
+    const influence = Math.max(0, Math.floor(raw.influencePoints));
+    npc.influencePoints = influence;
+  }
+
+  if (typeof raw?.notes === 'string') {
+    npc.notes = raw.notes;
+  }
+
+  return npc;
+}
+
 function loadNPCs(): NPC[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as NPC[];
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => normalizeNPC(item));
   } catch {
-    // ignore
+    // ignore parse/shape errors and fall back to empty list
   }
   return [];
 }
 
 function saveNPCs(npcs: NPC[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(npcs));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(npcs));
+  } catch {
+    // If saving fails (e.g., quota exceeded or storage disabled), skip persisting NPCs.
+  }
 }
 
 export default function App() {
   const [npcs, setNPCs] = useState<NPC[]>(loadNPCs);
   const [showBiases, setShowBiases] = useState<boolean>(() => {
-    return localStorage.getItem(SHOW_BIASES_KEY) === 'true';
+    try {
+      return localStorage.getItem(SHOW_BIASES_KEY) === 'true';
+    } catch {
+      return false;
+    }
   });
 
   useEffect(() => {
-    saveNPCs(npcs);
+    const timeoutId = window.setTimeout(() => {
+      saveNPCs(npcs);
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [npcs]);
 
   useEffect(() => {

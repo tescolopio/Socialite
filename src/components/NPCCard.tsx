@@ -53,6 +53,9 @@ export default function NPCCard({
     const reader = new FileReader();
     reader.onload = () => {
       onUpdate({ ...npc, portrait: reader.result as string });
+      if (fileRef.current) {
+        fileRef.current.value = '';
+      }
     };
     reader.readAsDataURL(file);
   }
@@ -125,7 +128,10 @@ export default function NPCCard({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') fileRef.current?.click();
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileRef.current?.click();
+          }
         }}
         aria-label="Upload NPC portrait"
       >
@@ -162,13 +168,14 @@ export default function NPCCard({
             aria-label="NPC name"
           />
         ) : (
-          <h2
+          <button
+            type="button"
             className="npc-name"
             onClick={() => setEditingName(true)}
             title="Click to edit name"
           >
             {npc.name}
-          </h2>
+          </button>
         )}
         <button
           className="btn-icon btn-delete"
@@ -299,7 +306,12 @@ export default function NPCCard({
                 min={-5}
                 max={5}
                 value={newBiasValue}
-                onChange={(e) => setNewBiasValue(Number(e.target.value))}
+                onChange={(e) => {
+                  const raw = Number(e.target.value);
+                  const safe = Number.isNaN(raw) ? 0 : raw;
+                  const clamped = Math.max(-5, Math.min(5, safe));
+                  setNewBiasValue(clamped);
+                }}
                 className="bias-val-input"
                 aria-label="New bias value"
               />
@@ -331,7 +343,12 @@ export default function NPCCard({
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') setEditingNotes(true);
+              if (e.key === 'Enter' || e.key === ' ') {
+                if (e.key === ' ') {
+                  e.preventDefault();
+                }
+                setEditingNotes(true);
+              }
             }}
           >
             {npc.notes || 'Click to add notes…'}
