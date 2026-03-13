@@ -12,7 +12,8 @@ A visual GM dashboard for tracking complex social negotiations using narrative m
 - **Influence Points** – Track per-NPC influence with a simple +/− counter
 - **Hidden Biases** – Set labeled biases on a −5 to +5 scale; shown as color-coded bar charts in GM mode, hidden from players otherwise
 - **GM Mode toggle** – Reveal or conceal biases at the top-level with one checkbox
-- **Persistence** – All data is saved to `localStorage` automatically
+- **JSON NPC documents** – Import NPCs from a `.json` file or export the current dashboard as `socialite-npcs.json`
+- **Persistence** – NPC data is stored locally using the same JSON document format automatically
 
 ## Getting Started
 
@@ -39,3 +40,5 @@ npm run build
 6. Click **Edit** on the biases section to add / adjust hidden biases
 7. Toggle **Show Biases (GM mode)** to reveal biases on screen
 8. Click **GM Notes** to add private notes
+9. Use **Import JSON** to load NPCs from a JSON file
+10. Use **Export JSON** to download the current NPC roster as a reusable source-of-truth file

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import type { NPC } from './types';
 import NPCCard from './components/NPCCard';
+import { parseNPCDocument, serializeNPCDocument } from './npcDocument';
 import { randomUUID } from './utils';
 
 const STORAGE_KEY = 'socialite_npcs';
@@ -19,63 +20,13 @@ function createNPC(): NPC {
   };
 }
 
-function normalizeNPC(raw: any): NPC {
-  const base = createNPC();
-
-  const npc: NPC = {
-    ...base,
-    // id is required; fall back to generated if missing/invalid
-    id: typeof raw?.id === 'string' && raw.id.length > 0 ? raw.id : base.id,
-  };
-
-  if (typeof raw?.name === 'string') {
-    npc.name = raw.name;
-  }
-
-  // portrait can be null or a string
-  if (raw && (raw.portrait === null || typeof raw.portrait === 'string')) {
-    npc.portrait = raw.portrait;
-  }
-
-  if (Array.isArray(raw?.biases)) {
-    npc.biases = raw.biases;
-  }
-
-  if (typeof raw?.clockSegments === 'number' && Number.isFinite(raw.clockSegments)) {
-    const segments = Math.max(1, Math.floor(raw.clockSegments));
-    npc.clockSegments = segments;
-  }
-
-  if (typeof raw?.clockFilled === 'number' && Number.isFinite(raw.clockFilled)) {
-    const filled = Math.max(0, Math.floor(raw.clockFilled));
-    npc.clockFilled = filled;
-  }
-
-  if (typeof raw?.influencePoints === 'number' && Number.isFinite(raw.influencePoints)) {
-    const influence = Math.max(0, Math.floor(raw.influencePoints));
-    npc.influencePoints = influence;
-  }
-
-  if (typeof raw?.notes === 'string') {
-    npc.notes = raw.notes;
-  }
-
-  return npc;
-}
-
 function loadNPCs(): NPC[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       return [];
     }
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed
-      .filter((item) => item && typeof item === 'object')
-      .map((item) => normalizeNPC(item));
+    return parseNPCDocument(raw);
   } catch {
     // ignore parse/shape errors and fall back to empty list
   }
@@ -84,13 +35,14 @@ function loadNPCs(): NPC[] {
 
 function saveNPCs(npcs: NPC[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(npcs));
+    localStorage.setItem(STORAGE_KEY, serializeNPCDocument(npcs));
   } catch {
     // If saving fails (e.g., quota exceeded or storage disabled), skip persisting NPCs.
   }
 }
 
 export default function App() {
+  const importFileRef = useRef<HTMLInputElement>(null);
   const [npcs, setNPCs] = useState<NPC[]>(loadNPCs);
   const [showBiases, setShowBiases] = useState<boolean>(() => {
     try {
@@ -132,6 +84,53 @@ export default function App() {
     }
   }
 
+  function exportNPCs() {
+    const blob = new Blob([serializeNPCDocument(npcs)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'socialite-npcs.json';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleImportNPCs(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const importedNPCs = parseNPCDocument(await file.text());
+
+      if (importedNPCs.length === 0) {
+        window.alert(
+          'No NPCs found in the uploaded file. Please ensure the JSON contains an "npcs" array with NPC objects, or is an array of NPC objects at the root level.',
+        );
+        return;
+      }
+
+      if (
+        npcs.length > 0 &&
+        !window.confirm('Replace the current NPCs with the uploaded JSON file?')
+      ) {
+        return;
+      }
+
+      setNPCs(importedNPCs);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unable to import NPC JSON. Please try again.';
+      window.alert(message);
+    }
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -148,11 +147,24 @@ export default function App() {
             />
             Show Biases (GM mode)
           </label>
-          <button className="btn-primary" onClick={addNPC}>
+          <input
+            ref={importFileRef}
+            type="file"
+            accept="application/json,.json"
+            style={{ display: 'none' }}
+            onChange={handleImportNPCs}
+          />
+          <button type="button" className="btn-sm" onClick={() => importFileRef.current?.click()}>
+            Import JSON
+          </button>
+          <button type="button" className="btn-sm" onClick={exportNPCs} disabled={npcs.length === 0}>
+            Export JSON
+          </button>
+          <button type="button" className="btn-primary" onClick={addNPC}>
             + Add NPC
           </button>
           {npcs.length > 0 && (
-            <button className="btn-danger" onClick={resetAll}>
+            <button type="button" className="btn-danger" onClick={resetAll}>
               Reset All
             </button>
           )}
@@ -165,9 +177,9 @@ export default function App() {
             <div className="empty-icon">🎭</div>
             <h2>No NPCs yet</h2>
             <p>Add an NPC to start tracking social encounters.</p>
-            <button className="btn-primary btn-lg" onClick={addNPC}>
-              + Add First NPC
-            </button>
+              <button type="button" className="btn-primary btn-lg" onClick={addNPC}>
+                + Add First NPC
+              </button>
           </div>
         ) : (
           <div className="npc-grid">
@@ -186,4 +198,3 @@ export default function App() {
     </div>
   );
 }
-
