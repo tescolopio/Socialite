@@ -98,7 +98,7 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
-  async function importNPCs(event: ChangeEvent<HTMLInputElement>) {
+  async function handleImportNPCs(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = '';
 
@@ -110,7 +110,9 @@ export default function App() {
       const importedNPCs = parseNPCDocument(await file.text());
 
       if (importedNPCs.length === 0) {
-        window.alert('The selected JSON file did not contain any NPCs.');
+        window.alert(
+          'No NPCs found in the uploaded file. Please ensure the JSON contains an "npcs" array with NPC objects, or is an array of NPC objects at the root level.',
+        );
         return;
       }
 
@@ -122,8 +124,10 @@ export default function App() {
       }
 
       setNPCs(importedNPCs);
-    } catch {
-      window.alert('Unable to import NPC JSON. Please verify the file contents and try again.');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unable to import NPC JSON. Please try again.';
+      window.alert(message);
     }
   }
 
@@ -148,7 +152,7 @@ export default function App() {
             type="file"
             accept="application/json,.json"
             style={{ display: 'none' }}
-            onChange={importNPCs}
+            onChange={handleImportNPCs}
           />
           <button type="button" className="btn-sm" onClick={() => importFileRef.current?.click()}>
             Import JSON

@@ -2,6 +2,9 @@ import type { Bias, NPC } from './types';
 import { randomUUID } from './utils';
 
 export const NPC_DOCUMENT_VERSION = 1;
+const MIN_BIAS_VALUE = -5;
+const MAX_BIAS_VALUE = 5;
+const MIN_CLOCK_SEGMENTS = 1;
 
 interface NPCDocument {
   version: typeof NPC_DOCUMENT_VERSION;
@@ -22,7 +25,7 @@ function createNPC(): NPC {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object';
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function normalizeBias(raw: unknown): Bias | null {
@@ -36,7 +39,7 @@ function normalizeBias(raw: unknown): Bias | null {
   }
 
   const rawValue = typeof raw.value === 'number' && Number.isFinite(raw.value) ? raw.value : 0;
-  const value = Math.max(-5, Math.min(5, Math.trunc(rawValue)));
+  const value = Math.max(MIN_BIAS_VALUE, Math.min(MAX_BIAS_VALUE, Math.trunc(rawValue)));
 
   return {
     id: typeof raw.id === 'string' && raw.id.length > 0 ? raw.id : randomUUID(),
@@ -69,7 +72,7 @@ export function normalizeNPC(raw: unknown): NPC {
   }
 
   if (typeof source.clockSegments === 'number' && Number.isFinite(source.clockSegments)) {
-    npc.clockSegments = Math.max(1, Math.floor(source.clockSegments));
+    npc.clockSegments = Math.max(MIN_CLOCK_SEGMENTS, Math.floor(source.clockSegments));
   }
 
   if (typeof source.clockFilled === 'number' && Number.isFinite(source.clockFilled)) {
@@ -105,7 +108,13 @@ export function serializeNPCDocument(npcs: NPC[]): string {
 }
 
 export function parseNPCDocument(raw: string): NPC[] {
-  const parsed: unknown = JSON.parse(raw);
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error('Failed to parse JSON file. Please ensure the file contains valid JSON.');
+  }
 
   if (Array.isArray(parsed)) {
     return normalizeNPCList(parsed);
